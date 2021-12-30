@@ -1,0 +1,16 @@
+---
+- name: Copy theme
+  copy:
+    src: "{{ ansible_role_wordpress_src_theme_path }}"
+    dest: "{{ ansible_role_wordpress_theme_path }}/{{ ansible_role_wordpress_theme}}"
+- name: Install theme
+  command: wp theme install {{ ansible_role_wordpress_theme_path }}/{{ ansible_role_wordpress_theme }} --activate --force
+  args:
+    chdir: "{{ ansible_role_wordpress_path }}"
+#    creates: "{{ ansible_role_wordpress_path }}/wp-content/plugins/{{ item }}"
+  become: true
+  become_user: "{{ ansible_role_wordpress_user }}"
+  #when:
+  #  - ansible_role_wordpress_plugins is defined and ( ansible_role_wordpress_plugins | length > 0)
+  #with_items: "{{ ansible_role_wordpress_plugins }}"
+

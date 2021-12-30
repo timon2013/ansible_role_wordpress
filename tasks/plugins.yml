@@ -1,0 +1,29 @@
+---
+- name: Copy plugins
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.path }}/{{ item.name }}"
+  loop: "{{ ansible_role_wordpress_plugins_zip }}"
+
+- name: Install plugins
+  command: wp plugin install {{ item }} --activate --force
+  args:
+    chdir: "{{ ansible_role_wordpress_path }}"
+    creates: "{{ ansible_role_wordpress_path }}/wp-content/plugins/{{ item }}"
+  become: true
+  become_user: "{{ ansible_role_wordpress_user }}"
+  when:
+    - ansible_role_wordpress_plugins is defined and ( ansible_role_wordpress_plugins | length > 0)
+  with_items: "{{ ansible_role_wordpress_plugins }}"
+
+- name: Configure W3 Total Cache plugin
+  command: wp w3-total-cache option set {{ item.setting }} {{ item.value }} --type={{ item.type }}
+  args:
+    chdir: "{{ ansible_role_wordpress_path }}"
+  become: true
+  become_user: "{{ ansible_role_wordpress_user }}"
+  when: 
+    - ansible_role_wordpress_plugins is defined
+    - ansible_role_wordpress_plugins | length > 0
+    - ("w3-total-cache" in ansible_role_wordpress_plugins)
+  with_items: "{{ ansible_role_wordpress_plugins_w3tc }}"

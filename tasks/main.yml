@@ -1,2 +1,62 @@
 ---
 # tasks file for ansible_role_wordpress
+
+
+### WP CLI ###
+
+- name: Check if wp-cli is installed
+  stat:
+    path: /usr/bin/wp
+  changed_when: false
+  register: ansible_role_wordpress_wpcli
+
+- name: Install wp-cli if missing
+  get_url:
+    url: "{{ ansible_role_wordpress_wpcli_source }}"
+    dest: /usr/bin/wp
+    mode: a+x
+  when: not ansible_role_wordpress_wpcli.stat.exists
+
+## Wordpress ###
+
+- name: Ensure install directory exists
+  file:
+    path: "{{ ansible_role_wordpress_path }}"
+    state: directory
+    owner: "{{ ansible_role_wordpress_user }}"
+    group: "{{ ansible_role_wordpress_group }}"
+    mode: 0755
+  
+- name: Download WordPress
+  shell: wp core download
+  args:
+    chdir: "{{ ansible_role_wordpress_path }}"
+    creates: "{{ ansible_role_wordpress_path }}/index.php"
+  become: true
+  become_user: "{{ ansible_role_wordpress_user }}"
+
+- name: Create wp-config.php
+  shell: wp config create --dbname="{{ ansible_role_wordpress_db_name }}" --dbuser="{{ ansible_role_wordpress_db_user }}" --dbpass="{{ ansible_role_wordpress_db_pass }}"
+  args:
+    chdir: "{{ ansible_role_wordpress_path }}"
+    creates: "{{ ansible_role_wordpress_path }}/wp-config.php"
+  become: true
+  become_user: "{{ ansible_role_wordpress_user }}"
+
+- name: Install WordPress
+  command: wp core install --url="{{ ansible_role_wordpress_site_domain }}" --title="{{ ansible_role_wordpress_site_domain }}" --admin_user="{{ ansible_role_wordpress_site_user }}" --admin_password="{{ ansible_role_wordpress_site_pass }}" --admin_email="{{ ansible_role_wordpress_site_email }}"
+  args:
+    chdir: "{{ ansible_role_wordpress_path }}"
+  become: true
+  become_user: "{{ ansible_role_wordpress_user }}"
+
+- name: Include plugins tasks
+  include: plugins.yml
+
+- name: Include plugins tasks
+  include: themes.yml
+
+#find /home/wordpress/site/ -type d -exec chmod g+s {} \;
+#chmod g+w /home/wordpress/site/wp-content
+#chmod -R g+w /home/wordpress/site/wp-content/themes
+#chmod -R g+w /home/wordpress/site/wp-content/plugins
